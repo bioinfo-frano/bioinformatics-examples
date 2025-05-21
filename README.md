@@ -107,4 +107,4 @@ This text-based guide documents a complete cloud bioinformatics workflow using A
 - Multi-factor authentication (MFA) setup
 - Secure AWS CLI configuration
 
-**Protocol File:** [`Cloud_Bioinformatics_Nextflow_AWS_EC2.txt`](Cloud_Bioinformatics_Nextflow_AWS_EC2.txt)
+**Protocol File:** [`Cloud_Bioinformatics_Nextflow_BasicTutorial_AWS_EC2.txt`](Cloud_Bioinformatics_Nextflow_BasicTutorial_AWS_EC2.txt)
