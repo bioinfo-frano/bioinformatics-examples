@@ -1,0 +1,378 @@
+Introduction: Most probably, the majority of computers found in the market do not have the computational power to process fastq files from genomics,
+transcriptomics, spatial and single-cell/nucleus -omics or be able to run DeepLearning.
+Even fewer computers can index a reference genome or generate a gentrome, often relying instead on pre-built or pre-indexed versions. 
+In order to achieve that, you must use high-performance computers (HPCs) from universities or private institutions. 
+Private companies offering this service are not only AWS (Amazon Web Services) but also Google Cloud Platform (GCP), Microsoft Azure, among others. 
+You will be charged for using cloud services from private companies.
+
+Why Cloud Bioinformatics?
+- You don't want to run large amounts of data on your computer.
+- You want to avoid wasting time running large-scale analyses on a personal or low-resource computer.
+
+Important: AWS and other cloud services are paid. This means:
+- This means you need to clearly understand the type of analysis to perform in the cloud, 
+the size and scale of the data to process, the type of cloud instance to set up, and ideally, 
+the time required for the tasks, so you can estimate the costs of the analysis.
+
+For memory- or CPU-intensive tasks, instance types like m5.large or r5.xlarge may be more appropriate than the default t2 instances.
+
+Source/Guidance/Help:
+
+Lynn Langit
+https://www.youtube.com/playlist?list=PL4Q4HssKcxYt48KtjpILjwTT-6s-zziDj
+
+Travis Media
+https://www.youtube.com/watch?v=CjKhQoYeR4Q
+
+NetworkChuck
+https://www.youtube.com/watch?v=bgPuPSPZe2U
+ 
+ChatGPT
+
+
+General aim: 
+
+* Set up a AWS cloud computer
+
+* To be able to run a Nextflow pipeline for bulk RNA-seq using some fastq files.
+
+
+1. Create an AWS Account
+
+* Sign up at aws.amazon.com. 
+* Choose the Free Tier and verify identity with credit card. 
+* Set up billing alerts (Billing → Budgets → Monthly Cost Budget). 
+* Secure your root account:
+    * Enable MFA: IAM > My security credentials > MFA > Use Authenticator App. 
+
+2. Launch an EC2 Instance
+
+* Service: Go to EC2 → Launch Instance. 
+* AMI: Ubuntu 22.04 LTS. 
+* Instance Type: t3.2xlarge (8 vCPU, 32 GB RAM) or t2.micro (Free Tier). 
+* Key Pair: Create and download .pem (e.g. <KEY_PAIR_NAME>.pem). 
+* Network: Allow SSH from "My IP" only. 
+* Storage: Minimum 50 GB SSD. 
+* Launch. 
+
+3. Connect AWS-Instance with local terminal via SSH
+
+On your local terminal (bash), set permissions and connect
+
+chmod 400 ~/.ssh/<KEY_PAIR_NAME>.pem
+ssh -i ~/.ssh/<KEY_PAIR_NAME>.pem ubuntu@<EC2_PUBLIC_IP>
+
+* Note *
+Once connected, you'll be working within the instance. Your prompt will appear as something like:  
+`ubuntu@ip-172-31-30-72:~$`, indicating you're now inside the EC2 machine.
+
+4. Prepare the Instance (install tools/dependencies for bioinformatics analysis) * This step is in ubuntu@ip-172-31-30-72 (instance)
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Download Miniconda installer
+
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+# Run the miniconda installer:
+
+bash Miniconda3-latest-Linux-x86_64.sh
+
+# Activate conda environment (base) 
+
+/home/ubuntu/miniconda3/bin/conda init	# close and reopen the terminal or or run: source ~/.bashrc
+
+# Create conda 'RNA' environment
+
+conda create -n RNA python=3.10 -y
+
+# Activate 'RNA' environment
+
+conda activate RNA
+
+# Install dependencies in 'RNA'
+
+conda install -c bioconda -c conda-forge nextflow fastqc multiqc trim-galore samtools cutadapt \
+    kallisto salmon hisat2 subread picard htseq -y
+
+
+# Install Additional Utilities in RNA (like Java, required for Nextflow):
+
+sudo apt install -y openjdk-17-jre awscli pigz
+
+
+4.5 Prepare directories in Instance
+
+
+(base) ubuntu@ip-172-31-30-72:~$ conda activate RNA
+(RNA) ubuntu@ip-172-31-30-72:~$ pwd
+/home/ubuntu
+(RNA) ubuntu@ip-172-31-30-72:~$ mkdir -p ~/nextflow_projects/QC_trimming/input
+(RNA) ubuntu@ip-172-31-30-72:~$ ls -lt
+total 151844
+drwxrwxr-x  3 ubuntu ubuntu      4096 May 17 14:47 nextflow_projects
+drwxrwxr-x 19 ubuntu ubuntu      4096 May 16 17:32 miniconda3
+-rw-rw-r--  1 ubuntu ubuntu 155472915 Apr 30 20:14 Miniconda3-latest-Linux-x86_64.sh
+
+(RNA) ubuntu@ip-172-31-30-72:~$ cd nextflow_projects/QC_trimming/
+(RNA) ubuntu@ip-172-31-30-72:~/nextflow_projects/QC_trimming$ ls -lt
+total 12
+-rw-r--r-- 1 ubuntu ubuntu 6044 May 17 15:06 main_fastqc_multiqc_trimming.nf
+drwxrwxr-x 2 ubuntu ubuntu 4096 May 17 14:47 input
+
+
+5. Transfer Data to Instance (From Local Machine)
+
+# Transfer pipeline (.nf)
+scp -i ~/.ssh/<KEY_PAIR_NAME>.pem /path/to/main.nf \
+  ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/
+
+
+(RNA) Franos-MBP:~ Frano$ scp -i ~/.ssh/<KEY_PAIR_NAME>.pem \
+>   /Users/Frano/Desktop/Bioinfo_2025/.../main_fastqc_multiqc_trimming.nf \
+>   ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/
+
+
+# Transfer FASTQ and .md5
+scp -i ~/.ssh/<KEY_PAIR_NAME>.pem /path/to/*.fastq.gz* \
+  ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/input/
+
+
+(RNA) Franos-MBP:~ Frano$ scp -i ~/.ssh/<KEY_PAIR_NAME>.pem \
+>   /Users/Frano/Desktop/Bioinfo_2025/.../fastq_gz/*.fastq.gz* \
+>   ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/input/
+G1_0005-24_L_S1_R1_001.fastq.gz                                                                100% 1313MB   4.6MB/s   04:42    
+G1_0005-24_L_S1_R1_001.fastq.gz.md5                                                            100%   73     8.2KB/s   00:00    
+G1_0005-24_M_S29_R1_001.fastq.gz                                                               100% 1032MB   4.5MB/s   03:48    
+G1_0005-24_M_S29_R1_001.fastq.gz.md5                                                           100%   74     6.6KB/s   00:00    
+G1_0020-24_L_S2_R1_001.fastq.gz                                                                100% 1081MB   4.5MB/s   04:00    
+G1_0020-24_L_S2_R1_001.fastq.gz.md5                                                            100%   73     7.3KB/s   00:00    
+G1_0020-24_M_S30_R1_001.fastq.gz                                                               100% 1027MB   4.5MB/s   03:50    
+G1_0020-24_M_S30_R1_001.fastq.gz.md5                                                           100%   74     8.3KB/s   00:00    
+G1_0025-24_L_S3_R1_001.fastq.gz                                                                100% 1124MB   4.5MB/s   04:10    
+...
+
+
+6. Run the Nextflow Pipeline from instance
+
+cd ~/nextflow_projects/QC_trimming
+nextflow run main_fastqc_multiqc_trimming.nf
+
+(RNA) ubuntu@ip-172-31-30-72:~/nextflow_projects/QC_trimming$ nextflow run main_fastqc_multiqc_trimming.nf
+
+ N E X T F L O W   ~  version 25.04.2
+
+Launching `main_fastqc_multiqc_trimming.nf` [marvelous_venter] DSL2 - revision: bff175ce58
+
+executor >  local (35)
+[df/68e8f0] check_md5 (G1_0035-24_M_S32_R1_001)   [100%] 8 of 8 ✔
+[-        ] check_orphaned_md5                    -
+[fe/882e5c] fastqc_raw (8)                        [100%] 8 of 8 ✔
+[d0/0cf076] trim_galore (G1_0035-24_M_S32_R1_001) [100%] 8 of 8 ✔
+[e3/604c6c] fastqc_trimmed (8)                    [100%] 8 of 8 ✔
+[e9/f20937] multiqc_raw                           [100%] 1 of 1 ✔
+[48/ca2cce] multiqc_trimmed                       [100%] 1 of 1 ✔
+[d8/d60e19] combine_md5_logs                      [100%] 1 of 1 ✔
+Completed at: 17-May-2025 17:03:31
+Duration    : 28m 42s
+CPU hours   : 3.7
+Succeeded   : 35
+
+
+7. Transfer Results Back to Local
+
+scp -r -i ~/.ssh/<KEY_PAIR_NAME>.pem \
+  ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/results/ \
+  /local/path/Cloud_Computing/
+
+
+(RNA) Franos-MBP:~ Frano$ scp -r -i ~/.ssh/<KEY_PAIR_NAME>.pem \
+>   ubuntu@<EC2_PUBLIC_IP>:~/nextflow_projects/QC_trimming/results/ \
+>   /Users/Frano/Desktop/Bioinfo_2025/Cloud_Computing/
+G1_0025-24_M_S31_R1_001_trimmed.fq.gz                                                          100%  837MB  11.9MB/s   01:10    
+G1_0035-24_L_S4_R1_001_trimmed.fq.gz                                                           100%  831MB  11.8MB/s   01:10   
+...
+G1_0035-24_L_S4_R1_001_fastqc.html                                                             100%  740KB   9.9MB/s   00:00    
+G1_0020-24_M_S30_R1_001_fastqc.html                                                            100%  744KB  10.6MB/s   00:00    
+verify_md5_integrity.txt                                                                       100%  428    23.4KB/s   00:00    
+multiqc_report_raw.html                                                                        100% 5026KB  11.5MB/s   00:00  
+
+
+
+8. Monitor Billing
+
+Two ways two know the source of this cost:
+
+1. Go to Billing and Cost Management > Cost Explorer > New cost and usage report
+
+a) Set the date range --> Display the last 7 days
+b) Granularity daily
+c) Group by (Dimension) --> usage type
+
+By filtering your bill in this way, you'll see a bar chart representing the costs per day of each AWS service during the last 7 days.
+If you want to know in more detail what specific service is charging/amounting, the data can be further filtered.
+
+d) Go to Filters --> Service --> Choose "EC2 - Other"
+
+This will show that, for example, that from the service "EC2 - Other", the EUC1-EBS:SnapshotUsage is charging you this 0.07 USD (even though you are not
+running the instance during those days)
+
+
+2.Go to Billing and Cost Management > Bills
+
+- Scroll down till you see "Amazon Web Services EMEA SARL charges by service". Click on "Expand all"
+
+
+9. Setting Up MFA for Your Root User
+
+Enhancing your account security with MFA is a commendable step. Here's how to set it up for your root user:
+
+a. Sign in to the AWS Management Console as the root user.
+b. Navigate to the IAM Dashboard:
+c. In Security recommendations, click on "Add MFA" (under "Add MFA for root user")
+This brings you to the Assign MFA device page.
+
+d. Select MFA device type:
+Choose "Authenticator App" (this is the most common, free, and secure option).
+You'll use an app like:
+- Google Authenticator (iOS/Android)
+- Authy (iOS/Android or desktop)
+- 1Password or Microsoft Authenticator (optional)
+
+Add a name to your MFA device
+
+Click "Next"
+
+e. Scan QR Code with your app:
+- Open the MFA app
+- Tap "+" to add a new account
+- Scan the QR code shown on AWS
+
+f. Enter two consecutive codes from your MFA app
+This verifies the pairing.
+
+g. You will appear now in the window "My security credentials Root user" in IAM > Security credentials
+
+h. Go back to IAM > Dashboard and click on refresh in "Security recommendations". You should see everything in green.
+
+You’ll see a confirmation message that MFA is active for your root user ("Root user has MFA")
+
+With MFA enabled, even if someone obtains your password, they cannot access your account without the second authentication factor, significantly enhancing your account's security.
+
+
+10. Clean Up AWS Resources
+
+a. Terminate EC2 Instance
+
+aws ec2 terminate-instances --instance-ids <INSTANCE_ID> --region eu-central-1
+
+
+b. Deregister AMI & Delete Snapshot
+
+aws ec2 deregister-image --image-id <AMI_ID> --region eu-central-1
+aws ec2 delete-snapshot --snapshot-id <SNAPSHOT_ID> --region eu-central-1
+
+
+c. Delete Launch Template
+
+aws ec2 delete-launch-template --launch-template-id <TEMPLATE_ID> --region eu-central-1
+
+
+d. Delete Security Group
+
+aws ec2 delete-security-group --group-id <GROUP_ID> --region eu-central-1
+
+e. Delete Key Pair
+
+aws ec2 delete-key-pair --key-name <KEY_NAME> --region eu-central-1
+
+
+f. Check & Delete Volumes
+
+aws ec2 describe-volumes --region eu-central-1
+aws ec2 delete-volume --volume-id <VOLUME_ID> --region eu-central-1
+
+
+
+11. Work in your terminal with AWS CLI
+
+To configure AWS CLI access:
+
+a) Sign in to the AWS Console as root user or with appropriate permissions.
+b) Go to IAM > Users.
+c) Click to the “My security credentials”.
+d) Scroll down to “Access keys”.
+e) Click “Create access key” → Choose "Command Line Interface (CLI)" use case.
+f) Download the .csv or copy:
+Access Key ID
+Secret Access Key ← shown only once!
+
+In terminal 
+
+aws configure
+
+# Enter AWS Access Key, Secret Key, region (eu-central-1)
+
+# When aws is not yet configured
+
+(RNA) Franos-MBP:nextflow_qc Frano$ 00~aws --version
+-bash: 00~aws: command not found
+
+# After configuration of aws
+
+(RNA) Franos-MBP:nextflow_qc Frano$ aws --version
+aws-cli/2.27.16 Python/3.13.3 Darwin/20.6.0 exe/x86_64
+
+
+# Before obtaining acces_key and secret_key
+
+(RNA) Franos-MBP:nextflow_qc Frano$ aws configure list
+      Name                    Value             Type    Location
+      ----                    -----             ----    --------
+   profile                <not set>             None    None
+access_key                <not set>             None    None
+secret_key                <not set>             None    None
+    region                <not set>             None    None
+
+
+# Before obtaining acces_key and secret_key
+
+(RNA) Franos-MBP:~ Frano$ aws configure list
+      Name                    Value             Type    Location
+      ----                    -----             ----    --------
+   profile                <not set>             None    None
+access_key     <YOUR_ACCESS_KEY_ID>     shared-credentials-file    
+secret_key     <YOUR_SECRET_ACCESS_KEY> shared-credentials-file    
+    region             eu-central-1      config-file    ~/.aws/config
+
+
+Now you can use AWS CLI on your terminal. For example:
+
+# When requesting if the instance is or not running
+
+aws ec2 describe-instances --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name}" --region eu-central-1
+[
+    {
+        "ID": "< i-ID >",
+        "State": "stopped"
+    }
+]
+
+# When terminating an instance
+
+aws ec2 terminate-instances --instance-ids i-ID --region eu-central-1 
+
+
+To delete AWS credentials from your machine:
+
+rm -rf ~/.aws
+
+
+** IMPORTANT **
+There are many other steps that were not considered in this protocol:
+- Creating a custom Amazon Machine Image (AMI), Snapshot, and Launch template.
+- Obtaining Key pairs.
+- Setting up bill alarms and security group.
+
+

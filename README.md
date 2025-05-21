@@ -26,7 +26,7 @@ This repository contains curated examples of my bioinformatics work, spanning bu
 - QC metrics (rRNA counts, strandness, raw duplicates)
 - MultiQC
 
-**Nextflow Pipeline:** 
+**Nextflow Pipeline:**
 - [`main_analysis_prebuilt_HISAT2_only_FeatCounts_multi_vM25.nf`](main_analysis_prebuilt_HISAT2_only_FeatCounts_multi_vM25.nf)
 - [`vM25_multiqc_config.yaml`](vM25_multiqc_config.yaml)
 
@@ -85,6 +85,26 @@ This repository contains curated examples of my bioinformatics work, spanning bu
 - Cell clustering
 - Cell annotation and differential gene expression per cluster
 
-**PDF Document:** 
+**PDF Document:**
 - [`2024_ABI_Internship_UMM_PartI.pdf`](2024_ABI_Internship_UMM_PartI.pdf)
 - [`2024_ABI_Internship_UMM_PartII.pdf`](2024_ABI_Internship_UMM_PartII.pdf)
+
+
+---
+
+
+# Cloud Bioinformatics with AWS EC2 & Nextflow
+
+## Setup, Execution, and Cost-Control for High-Performance FASTQ Processing
+
+This text-based guide documents a complete cloud bioinformatics workflow using Amazon Web Services (AWS) EC2 instances, Miniconda, and Nextflow. It includes:
+
+- Instance setup and security configuration
+- Installation of bioinformatics tools
+- FASTQ transfer to/from cloud
+- Pipeline execution using Nextflow
+- Cost monitoring and resource cleanup
+- Multi-factor authentication (MFA) setup
+- Secure AWS CLI configuration
+
+**Protocol File:** [`Cloud_Bioinformatics_Nextflow_AWS_EC2.txt`](Cloud_Bioinformatics_Nextflow_AWS_EC2.txt)
