@@ -369,10 +369,79 @@ To delete AWS credentials from your machine:
 rm -rf ~/.aws
 
 
+###### Setting up billing alerts ######
+
+✅ 1. Go to:
+CloudWatch > Alarms > Create alarm
+
+✅ 2. Select metric
+Under “Select metric”, click:
+Browse > Billing > Total Estimated Charge
+Choose:
+EstimatedCharges (USD)
+Click “Select metric” (top-right).
+
+✅ 3. Specify metric and conditions
+Set the threshold:
+
+Field				Value for 50% Alarm	Value for 90% Alarm
+Threshold type			Static			Static
+Whenever EstimatedCharges is...	Greater than		Greater than
+... Threshold			10 USD			18 USD
+For... consecutive periods	1			1
+Datapoints within...		6 hours			6 hours
+
+Click Next.
+
+✅ 4. Configure actions (Notifications)
+
+Create a separate SNS topic per alarm or reuse a previously created if you want all alerts to go to the same email.
+
+Create a new topic (e.g., billing-alert-50-percent):
+
+Select: “Create new topic”
+Name: billing-alert-50-percent
+Add your email
+Confirm the subscription (check your email inbox)
+Repeat the same for 90%.
+
+✅ 5. Name and create the alarm
+For 50%:
+
+Name the alarm: BillingAlarm50Percent
+
+For 90%:
+
+Name the alarm: BillingAlarm90Percent
+
+Click "Next"
+
+Then, you are sent to a summary of the alarm details.
+
+Click “Create alarm”
+
+🧾 Tip: How to confirm they're working
+
+Once created:
+
+Go to CloudWatch > Alarms > All alarms
+You should now see 2 alarms: 50%, 90%
+All in “OK” state for now (until costs cross the thresholds)
+
+
+💰 Cost?
+Billing alarms using CloudWatch are free.
+
+
+
+
+
+
+
 ** IMPORTANT **
 There are many other steps that were not considered in this protocol:
 - Creating a custom Amazon Machine Image (AMI), Snapshot, and Launch template.
 - Obtaining Key pairs.
-- Setting up bill alarms and security group.
+- Setting up security group.
 
 
